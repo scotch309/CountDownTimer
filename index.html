@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-gH2yIJqKdNHPEq0n4Mqa/HGKIhSkIHeL5AyhkYV8i59U5AR6csBvApHHNl/vI1Bx" crossorigin="anonymous">
+	<style type="text/css">
+	[v-cloak] {
+		display:none;
+	}	
+	</style>
+	<title>キッチンタイマー</title>
+</head>
+
+<body>
+<!-- template -->
+<div class="container text-center">
+	<!-- title -->
+	<div class="row my-5 fs-1 bg-primary">
+		<div class="col12 text-white">キッチンタイマー</div>
+	</div>
+	<!-- header -->
+	<div class="row my-1 fs-2">
+		<div class="col-3">時</div>
+		<div class="col-1">:</div>
+		<div class="col-3">分</div>
+		<div class="col-1">:</div>
+		<div class="col-3">秒</div>
+	</div>
+	<!-- input -->
+	<div class="row my-1 fs-2">
+		<div v-cloak id="hour" class="col-3">
+			<div v-if="!is_running" class="dropdown">
+				<button class="btn dropdown-toggle btn-lg" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+					{{selected_number}}
+				</button>
+				<ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+					<li v-for="number in numbers" v-bind:value="number" v-on:click="checkmenu" class="dropdown-item">{{number}}</li>
+				</ul>
+			</div>
+			<div v-else>{{selected_number}}</div>
+		</div>
+		<div class="col-1">:</div>
+		<div v-cloak id="minutes" class="col-3">
+			<div v-if="!is_running" class="dropdown">
+				<button class="btn dropdown-toggle btn-lg" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+					{{selected_number}}
+				</button>
+				<ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+					<li v-for="number in numbers" v-bind:value="number" v-on:click="checkmenu" class="dropdown-item">{{number}}</li>
+				</ul>
+			</div>
+			<div v-else>{{selected_number}}</div>
+		</div>
+		<div class="col-1">:</div>
+		<div v-cloak id="second" class="col-3">
+			<div v-if="!is_running" class="dropdown">
+				<button class="btn dropdown-toggle btn-lg" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+					{{selected_number}}
+				</button>
+				<ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+					<li v-for="number in numbers" v-bind:value="number" v-on:click="checkmenu" class="dropdown-item">{{number}}</li>
+				</ul>
+			</div>
+			<div v-else>{{selected_number}}</div>
+		</div>
+	</div>
+	<!-- start -->
+	<div class="row my-5 fs-2">
+		<div class="col-5"></div>
+		<button id="action" v-on:click="changeStatus" :class="is_running?'btn-secondary':'btn-success'" class="btn btn-lg col-2 text-center" type="button">{{is_running?"Stop":"Start"}}</button>
+		<div class="col-5"></div>
+	</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-A3rJD856KowSb7dwlZdYEkO39Gagi7vIsF0jrRAoQmDKKtQBHUuLZ9AsSv4jD4Xa" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+<script>
+function getTimerComponents(element, n_number) {
+	return new Vue({
+		el: element,
+		data: {
+			numbers:[...Array(n_number).keys()],
+			selected_number:0,
+			is_running: false
+		},
+		methods: {
+			checkmenu: function(event) {
+				this.selected_number = event.target.innerText
+			}
+		}
+	})
+}
+var hour = getTimerComponents('#hour',24)
+var minutes = getTimerComponents('#minutes',60)
+var second = getTimerComponents('#second',60)
+new Vue({
+	el: action,
+	data: {
+		is_running: false,
+		timer_id: null
+	},
+	methods: {
+		changeStatus(event) {
+			this.is_running = hour.is_running = minutes.is_running = second.is_running = !this.is_running
+			if (this.is_running) {
+				var sec = Number(hour.selected_number)*3600+Number(minutes.selected_number)*60+Number(second.selected_number)
+				this.timer_id = setInterval(() => {
+					if (sec-- > 0) {
+						this.sec2Time(sec)
+					} else {
+						clearInterval(this.timer_id)
+						this.sound('sine', 1)
+						this.is_running = hour.is_running = minutes.is_running = second.is_running = false
+					}
+				},1000)
+			} else {
+				clearInterval(this.timer_id)
+			}
+		},
+		sec2Time(sec) {
+			hour.selected_number = String(Math.floor(sec/3600))
+			minutes.selected_number = String(Math.floor(sec/60))
+			second.selected_number = String(sec%60)
+		},
+		sound(type, sec) {
+			const ctx = new AudioContext()
+			var vol = ctx.createGain()
+			vol.gain.value = 0
+			const osc = ctx.createOscillator()
+			osc.type = type
+			osc.connect(vol)
+			osc.connect(ctx.destination)
+			osc.start()
+			osc.stop(sec)
+		}
+	}
+})
+</script>
+</body>
+</html>
